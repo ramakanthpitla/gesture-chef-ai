@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Hands, Results } from '@mediapipe/hands';
-import { Camera } from '@mediapipe/camera_utils';
+import type { Results } from '@mediapipe/hands';
 
 export type GestureType =
     | 'swipe_left'
@@ -47,8 +46,8 @@ export const useGestureControl = (options: UseGestureControlOptions = {}) => {
     const [isPinching, setIsPinching] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const handsRef = useRef<Hands | null>(null);
-    const cameraRef = useRef<Camera | null>(null);
+    const handsRef = useRef<any>(null); // MediaPipe Hands instance
+    const cameraRef = useRef<any>(null); // MediaPipe Camera instance
     const lastLandmarksRef = useRef<any>(null);
     const gestureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const currentGestureRef = useRef<GestureType>(null);
@@ -265,107 +264,116 @@ export const useGestureControl = (options: UseGestureControlOptions = {}) => {
             setIsActive(true);
 
             // Wait for next tick to ensure video element exists
-            setTimeout(() => {
+            setTimeout(async () => {
                 const videoElement = document.getElementById('gesture-video') as HTMLVideoElement;
                 if (videoElement && stream) {
                     videoElement.srcObject = stream;
                     videoRef.current = videoElement;
 
-                    // Initialize MediaPipe Hands
-                    const hands = new Hands({
-                        locateFile: (file: string) => {
-                            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-                        }
-                    });
+                    try {
+                        // Dynamically import MediaPipe modules
+                        const { Hands } = await import('@mediapipe/hands');
+                        const { Camera } = await import('@mediapipe/camera_utils');
 
-                    hands.setOptions({
-                        maxNumHands: 1,
-                        modelComplexity: 1,
-                        minDetectionConfidence: 0.7,
-                        minTrackingConfidence: 0.7
-                    });
-
-                    hands.onResults((results: Results) => {
-                        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                            const landmarks = results.multiHandLandmarks[0];
-
-                            // Update hand position for pointer (use index fingertip)
-                            if (enablePointer) {
-                                const indexTip = landmarks[8];
-                                // Direct mapping - no mirroring
-                                const screenX = window.innerWidth * indexTip.x;
-                                const screenY = window.innerHeight * indexTip.y;
-
-                                // Debug logging
-                                console.log('Hand detected:', {
-                                    indexTip: { x: indexTip.x, y: indexTip.y },
-                                    screen: { x: screenX, y: screenY },
-                                    window: { w: window.innerWidth, h: window.innerHeight }
-                                });
-
-                                setHandPosition({ x: screenX, y: screenY });
+                        // Initialize MediaPipe Hands
+                        const hands = new Hands({
+                            locateFile: (file: string) => {
+                                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
                             }
+                        });
 
-                            // Detect static gesture
-                            const staticGesture = detectGestureFromLandmarks(landmarks);
+                        hands.setOptions({
+                            maxNumHands: 1,
+                            modelComplexity: 1,
+                            minDetectionConfidence: 0.7,
+                            minTrackingConfidence: 0.7
+                        });
 
-                            // ALWAYS detect swipe gestures for scrolling
-                            const swipeGesture = detectSwipe(landmarks, lastLandmarksRef.current);
+                        hands.onResults((results: Results) => {
+                            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                                const landmarks = results.multiHandLandmarks[0];
 
-                            // Prioritize swipe over static gesture for scrolling
-                            const detectedGesture = swipeGesture || staticGesture;
+                                // Update hand position for pointer (use index fingertip)
+                                if (enablePointer) {
+                                    const indexTip = landmarks[8];
+                                    // Direct mapping - no mirroring
+                                    const screenX = window.innerWidth * indexTip.x;
+                                    const screenY = window.innerHeight * indexTip.y;
 
-                            if (detectedGesture && detectedGesture !== currentGestureRef.current) {
-                                setCurrentGesture(detectedGesture);
+                                    // Debug logging
+                                    console.log('Hand detected:', {
+                                        indexTip: { x: indexTip.x, y: indexTip.y },
+                                        screen: { x: screenX, y: screenY },
+                                        window: { w: window.innerWidth, h: window.innerHeight }
+                                    });
 
-                                // Handle gestures
-                                if (detectedGesture === 'click' && enablePointer) {
-                                    // Use the ref to get current position
-                                    const { x, y } = handPositionRef.current;
-                                    console.log('Click gesture detected!');
-                                    handlePointerClick(x, y);
+                                    setHandPosition({ x: screenX, y: screenY });
                                 }
 
-                                // ALWAYS handle scroll gestures
-                                if (detectedGesture === 'swipe_up') {
-                                    handleScroll('up');
-                                } else if (detectedGesture === 'swipe_down') {
-                                    handleScroll('down');
+                                // Detect static gesture
+                                const staticGesture = detectGestureFromLandmarks(landmarks);
+
+                                // ALWAYS detect swipe gestures for scrolling
+                                const swipeGesture = detectSwipe(landmarks, lastLandmarksRef.current);
+
+                                // Prioritize swipe over static gesture for scrolling
+                                const detectedGesture = swipeGesture || staticGesture;
+
+                                if (detectedGesture && detectedGesture !== currentGestureRef.current) {
+                                    setCurrentGesture(detectedGesture);
+
+                                    // Handle gestures
+                                    if (detectedGesture === 'click' && enablePointer) {
+                                        // Use the ref to get current position
+                                        const { x, y } = handPositionRef.current;
+                                        console.log('Click gesture detected!');
+                                        handlePointerClick(x, y);
+                                    }
+
+                                    // ALWAYS handle scroll gestures
+                                    if (detectedGesture === 'swipe_up') {
+                                        handleScroll('up');
+                                    } else if (detectedGesture === 'swipe_down') {
+                                        handleScroll('down');
+                                    }
+
+                                    // Call user's gesture handler
+                                    if (onGestureRef.current) {
+                                        onGestureRef.current(detectedGesture);
+                                    }
+
+                                    // Clear gesture after a delay
+                                    if (gestureTimeoutRef.current) {
+                                        clearTimeout(gestureTimeoutRef.current);
+                                    }
+                                    gestureTimeoutRef.current = setTimeout(() => {
+                                        setCurrentGesture(null);
+                                    }, 800); // Reduced timeout for faster gestures
                                 }
 
-                                // Call user's gesture handler
-                                if (onGestureRef.current) {
-                                    onGestureRef.current(detectedGesture);
-                                }
-
-                                // Clear gesture after a delay
-                                if (gestureTimeoutRef.current) {
-                                    clearTimeout(gestureTimeoutRef.current);
-                                }
-                                gestureTimeoutRef.current = setTimeout(() => {
-                                    setCurrentGesture(null);
-                                }, 800); // Reduced timeout for faster gestures
+                                lastLandmarksRef.current = landmarks;
                             }
+                        });
 
-                            lastLandmarksRef.current = landmarks;
-                        }
-                    });
+                        handsRef.current = hands;
 
-                    handsRef.current = hands;
+                        // Start camera processing
+                        const camera = new Camera(videoElement, {
+                            onFrame: async () => {
+                                if (handsRef.current && videoElement) {
+                                    await handsRef.current.send({ image: videoElement });
+                                }
+                            },
+                            width: 640,
+                            height: 480
+                        });
 
-                    // Start camera processing
-                    const camera = new Camera(videoElement, {
-                        onFrame: async () => {
-                            if (handsRef.current && videoElement) {
-                                await handsRef.current.send({ image: videoElement });
-                            }
-                        },
-                        width: 640,
-                        height: 480
-                    });
-
-                    camera.start();
-                    cameraRef.current = camera;
+                        camera.start();
+                        cameraRef.current = camera;
+                    } catch (error) {
+                        console.error('Error loading MediaPipe:', error);
+                        setIsActive(false);
+                    }
                 }
             }, 100);
 
