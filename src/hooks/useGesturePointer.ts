@@ -271,9 +271,18 @@ export const useGestureControl = (options: UseGestureControlOptions = {}) => {
                     videoRef.current = videoElement;
 
                     try {
-                        // Dynamically import MediaPipe modules
-                        const { Hands } = await import('@mediapipe/hands');
-                        const { Camera } = await import('@mediapipe/camera_utils');
+                        // Use MediaPipe from global scope (loaded via CDN scripts)
+                        const Hands = (window as any).Hands;
+                        const Camera = (window as any).Camera;
+
+                        if (!Hands) {
+                            throw new Error('MediaPipe Hands not loaded from CDN');
+                        }
+                        if (!Camera) {
+                            throw new Error('MediaPipe Camera not loaded from CDN');
+                        }
+
+                        console.log('📦 Loading MediaPipe from CDN...');
 
                         // Initialize MediaPipe Hands
                         const hands = new Hands({

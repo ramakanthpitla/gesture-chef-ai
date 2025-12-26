@@ -14,4 +14,18 @@ export default defineConfig(() => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    exclude: ['@mediapipe/hands', '@mediapipe/camera_utils', '@mediapipe/drawing_utils'],
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          'mediapipe-hands': ['@mediapipe/hands'],
+          'mediapipe-camera': ['@mediapipe/camera_utils'],
+        }
+      }
+    }
+  }
 }));
