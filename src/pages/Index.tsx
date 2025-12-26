@@ -284,14 +284,7 @@ const Index = () => {
           searchQuery={ingredients.join(' ')}
         />
 
-        {/* Footer */}
-        <footer className="py-8 border-t border-border bg-secondary/20">
-          <div className="container mx-auto px-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              Built with AI • Gesture & Voice Controls • Made for Hands-Free Cooking
-            </p>
-          </div>
-        </footer>
+
       </main>
 
       <GestureOverlay
