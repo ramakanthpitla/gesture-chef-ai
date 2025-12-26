@@ -10,12 +10,16 @@ interface GesturePointerProps {
 }
 
 export const GesturePointer = ({ x, y, isPointing, isPinching, isActive }: GesturePointerProps) => {
+    // Always show pointer when gestures are enabled, even if hand not detected
     if (!isActive) return null;
 
+    // Show at least idle state even if hand not detected
+    const hasHand = x > 0 && y > 0;
+
     // Determine current state
-    const isClicking = isPinching;
-    const isReady = isPointing && !isPinching;
-    const isIdle = !isPointing && !isPinching;
+    const isClicking = isPinching && hasHand;
+    const isReady = isPointing && !isPinching && hasHand;
+    const isIdle = !hasHand || (!isPointing && !isPinching);
 
     return (
         <AnimatePresence>
@@ -34,10 +38,10 @@ export const GesturePointer = ({ x, y, isPointing, isPinching, isActive }: Gestu
                 {/* Large outer glow ring - MORE VISIBLE */}
                 <motion.div
                     className={`absolute inset-0 w-24 h-24 -ml-12 -mt-12 rounded-full blur-2xl ${isClicking
-                            ? 'bg-green-500/60'
-                            : isReady
-                                ? 'bg-blue-500/50'
-                                : 'bg-gray-400/30'
+                        ? 'bg-green-500/60'
+                        : isReady
+                            ? 'bg-blue-500/50'
+                            : 'bg-gray-400/30'
                         }`}
                     animate={{
                         scale: isClicking ? [1, 1.3, 1] : isReady ? 1.1 : 0.9,
@@ -52,10 +56,10 @@ export const GesturePointer = ({ x, y, isPointing, isPinching, isActive }: Gestu
                 {/* Main pointer circle - BIGGER AND MORE VISIBLE */}
                 <motion.div
                     className={`relative w-16 h-16 -ml-8 -mt-8 rounded-full border-4 flex items-center justify-center shadow-2xl ${isClicking
-                            ? 'bg-green-500 border-green-400 shadow-green-500/80'
-                            : isReady
-                                ? 'bg-blue-500 border-blue-400 shadow-blue-500/80'
-                                : 'bg-gray-500 border-gray-400 shadow-gray-500/50'
+                        ? 'bg-green-500 border-green-400 shadow-green-500/80'
+                        : isReady
+                            ? 'bg-blue-500 border-blue-400 shadow-blue-500/80'
+                            : 'bg-gray-500 border-gray-400 shadow-gray-500/50'
                         }`}
                     animate={{
                         scale: isClicking ? 0.85 : isReady ? 1.05 : 0.95,
@@ -103,10 +107,10 @@ export const GesturePointer = ({ x, y, isPointing, isPinching, isActive }: Gestu
                     transition={{ delay: 0.3 }}
                 >
                     <div className={`px-4 py-2 rounded-xl shadow-xl border-2 text-sm font-bold ${isClicking
-                            ? 'bg-green-500 border-green-400 text-white'
-                            : isReady
-                                ? 'bg-blue-500 border-blue-400 text-white'
-                                : 'bg-gray-700 border-gray-600 text-white'
+                        ? 'bg-green-500 border-green-400 text-white'
+                        : isReady
+                            ? 'bg-blue-500 border-blue-400 text-white'
+                            : 'bg-gray-700 border-gray-600 text-white'
                         }`}>
                         {isClicking ? (
                             <span className="flex items-center gap-1.5">

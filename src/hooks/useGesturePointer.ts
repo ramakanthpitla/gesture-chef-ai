@@ -370,16 +370,27 @@ export const useGestureControl = (options: UseGestureControlOptions = {}) => {
 
                         camera.start();
                         cameraRef.current = camera;
+
+                        console.log('✅ MediaPipe loaded successfully!');
                     } catch (error) {
-                        console.error('Error loading MediaPipe:', error);
-                        setIsActive(false);
+                        console.error('❌ Error loading MediaPipe:', error);
+                        console.log('Error details:', {
+                            message: error instanceof Error ? error.message : 'Unknown error',
+                            stack: error instanceof Error ? error.stack : undefined
+                        });
+                        // Don't turn off - let camera stay on for debugging
+                        // User can see what's happening
                     }
                 }
             }, 100);
 
             return stream;
         } catch (error) {
-            console.error('Error accessing camera:', error);
+            console.error('❌ Error accessing camera:', error);
+            console.log('Camera access error details:', {
+                message: error instanceof Error ? error.message : 'Unknown error',
+                name: error instanceof Error ? error.name : undefined
+            });
             setIsActive(false);
             return null;
         }
