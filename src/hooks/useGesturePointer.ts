@@ -292,9 +292,17 @@ export const useGestureControl = (options: UseGestureControlOptions = {}) => {
                             // Update hand position for pointer (use index fingertip)
                             if (enablePointer) {
                                 const indexTip = landmarks[8];
-                                // Mirror horizontally for natural movement (camera is mirrored)
+                                // Direct mapping - no mirroring
                                 const screenX = window.innerWidth * indexTip.x;
                                 const screenY = window.innerHeight * indexTip.y;
+
+                                // Debug logging
+                                console.log('Hand detected:', {
+                                    indexTip: { x: indexTip.x, y: indexTip.y },
+                                    screen: { x: screenX, y: screenY },
+                                    window: { w: window.innerWidth, h: window.innerHeight }
+                                });
+
                                 setHandPosition({ x: screenX, y: screenY });
                             }
 
