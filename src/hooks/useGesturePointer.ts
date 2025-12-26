@@ -39,7 +39,10 @@ export const useGestureControl = (options: UseGestureControlOptions = {}) => {
     const [isActive, setIsActive] = useState(false);
     const [currentGesture, setCurrentGesture] = useState<GestureType>(null);
     const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-    const [handPosition, setHandPosition] = useState<HandPosition>({ x: 0, y: 0 });
+    const [handPosition, setHandPosition] = useState<HandPosition>({
+        x: typeof window !== 'undefined' ? window.innerWidth / 2 : 0,
+        y: typeof window !== 'undefined' ? window.innerHeight / 2 : 0
+    });
     const [isPointing, setIsPointing] = useState(false);
     const [isPinching, setIsPinching] = useState(false);
 
@@ -289,7 +292,8 @@ export const useGestureControl = (options: UseGestureControlOptions = {}) => {
                             // Update hand position for pointer (use index fingertip)
                             if (enablePointer) {
                                 const indexTip = landmarks[8];
-                                const screenX = window.innerWidth * (1 - indexTip.x);
+                                // Mirror horizontally for natural movement (camera is mirrored)
+                                const screenX = window.innerWidth * indexTip.x;
                                 const screenY = window.innerHeight * indexTip.y;
                                 setHandPosition({ x: screenX, y: screenY });
                             }
